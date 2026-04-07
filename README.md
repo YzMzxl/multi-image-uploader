@@ -3,6 +3,24 @@
 仓库地址：
 - https://github.com/YzMzxl/multi-image-uploader
 
+建议 GitHub 仓库描述：
+- 多图床上传小工具，支持 Lsky Pro+ 多实例、Node 代理与浏览器上传工作流
+
+建议 GitHub Topics：
+- `image-upload`
+- `image-uploader`
+- `file-uploader`
+- `lsky`
+- `lsky-pro`
+- `nodejs`
+- `express`
+- `self-hosted`
+- `webp`
+- `multi-service`
+
+当前版本：
+- `v1.1.0`
+
 一个面向浏览器的多图床上传工具，包含：
 - 前端上传界面
 - Node.js 本地代理服务

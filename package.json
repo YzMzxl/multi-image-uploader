@@ -1,7 +1,7 @@
 {
   "name": "multi-image-uploader",
-  "version": "1.0.0",
-  "description": "多图床上传小工具",
+  "version": "1.1.0",
+  "description": "多图床上传小工具，支持 Lsky Pro+ 多实例、Node 代理与浏览器上传工作流",
   "homepage": "https://github.com/YzMzxl/multi-image-uploader",
   "repository": {
     "type": "git",
@@ -10,6 +10,18 @@
   "bugs": {
     "url": "https://github.com/YzMzxl/multi-image-uploader/issues"
   },
+  "keywords": [
+    "image-upload",
+    "image-uploader",
+    "file-uploader",
+    "lsky",
+    "lsky-pro",
+    "nodejs",
+    "express",
+    "self-hosted",
+    "webp",
+    "multi-service"
+  ],
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
