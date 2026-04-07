@@ -17,6 +17,7 @@ const SCDN_OUTPUT_FORMAT_OPTIONS = [
 ];
 const SCDN_CDN_DOMAIN_OPTIONS = [
   { value: "", label: "默认返回域名" },
+  { value: "img.scdn.io", label: "img.scdn.io" },
   { value: "cloudflareimg.cdn.sn", label: "cloudflareimg.cdn.sn" },
   { value: "edgeoneimg.cdn.sn", label: "edgeoneimg.cdn.sn" },
   { value: "esaimg.cdn1.vip", label: "esaimg.cdn1.vip" },
