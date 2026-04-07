@@ -20,7 +20,7 @@
 - `multi-service`
 
 当前版本：
-- `v1.3.1`
+- `v1.3.2`
 
 ## 项目简介
 
@@ -140,6 +140,12 @@ https://img.scdn.io/api/v1.php
 - `password_enabled`
 - `image_password`
 - `cdn_domain`
+
+兼容说明：
+- 由于上游对部分 `cdn_domain` 取值会直接重置连接
+- 本项目会使用默认域名完成上传
+- 若你在面板里选择了其他 CDN 域名，则在上传成功后改写返回链接的域名
+- 这样可以兼容 `cloudflareimg.cdn.sn`、`edgeoneimg.cdn.sn`、`esaimg.cdn1.vip`
 
 在本项目中，这些设置项由前端可视化面板控制：
 - 输出格式

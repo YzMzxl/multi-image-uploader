@@ -17,10 +17,6 @@ async function upload({ file, fields }) {
     formData.append("image_password", config.imagePassword);
   }
 
-  if (config.cdnDomain) {
-    formData.append("cdn_domain", config.cdnDomain);
-  }
-
   const response = await fetch(config.uploadUrl, {
     method: "POST",
     body: formData,
@@ -49,14 +45,16 @@ async function upload({ file, fields }) {
     );
   }
 
+  const remoteUrl = applyScdnCdnDomain(data.url, config.cdnDomain);
+
   return {
     success: true,
     message: data.message || "",
     data: {
-      url: data.url,
+      url: remoteUrl,
     },
     meta: {
-      filename: data?.data?.filename || extractFileName(data.url),
+      filename: data?.data?.filename || extractFileName(remoteUrl),
       originalSize: data?.data?.original_size ?? file.size ?? "",
       compressedSize: data?.data?.compressed_size ?? "",
       compressionRatio: data?.data?.compression_ratio ?? "",
@@ -66,6 +64,20 @@ async function upload({ file, fields }) {
       upstream: config.uploadUrl,
     },
   };
+}
+
+function applyScdnCdnDomain(url, cdnDomain) {
+  if (!cdnDomain) {
+    return url;
+  }
+
+  try {
+    const target = new URL(url);
+    target.host = cdnDomain;
+    return target.toString();
+  } catch {
+    return url;
+  }
 }
 
 function extractErrorMessage(payload, raw, status) {

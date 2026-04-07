@@ -260,7 +260,6 @@ async function uploadScdn(file, fields = {}) {
     fields: {
       outputFormat,
       ...(passwordEnabled ? { password_enabled: "true", image_password: imagePassword } : {}),
-      ...(cdnDomain ? { cdn_domain: cdnDomain } : {}),
     },
   });
 
@@ -268,13 +267,15 @@ async function uploadScdn(file, fields = {}) {
     throw createUpstreamError("SCDN upstream upload failed", upstream);
   }
 
+  const remoteUrl = applyScdnCdnDomain(upstream.url, cdnDomain);
+
   return {
     success: true,
     data: {
-      url: upstream.url,
+      url: remoteUrl,
     },
     meta: {
-      filename: extractFileNameFromUrl(upstream.url),
+      filename: extractFileNameFromUrl(remoteUrl),
       originalSize: upstream?.data?.original_size ?? file.size ?? "",
       compressedSize: upstream?.data?.compressed_size ?? "",
       compressionRatio: upstream?.data?.compression_ratio ?? "",
@@ -397,6 +398,20 @@ function extractFileNameFromUrl(url) {
     return decodeURIComponent(cleanUrl.slice(cleanUrl.lastIndexOf("/") + 1));
   } catch {
     return "";
+  }
+}
+
+function applyScdnCdnDomain(url, cdnDomain) {
+  if (!cdnDomain) {
+    return url;
+  }
+
+  try {
+    const target = new URL(url);
+    target.host = cdnDomain;
+    return target.toString();
+  } catch {
+    return url;
   }
 }
 

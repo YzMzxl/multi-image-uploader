@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.3.2
+
+修复另外两个 SCDN CDN 域名上传失败的问题。
+
+### Fixed
+
+- 通过抓包确认，失败请求的共同点是直接向上游发送了 `cdn_domain`
+- 现在 SCDN 统一先用默认域名完成上传
+- 上传成功后，再把返回链接改写成用户选中的 CDN 域名
+- 避免上游对 `cloudflareimg.cdn.sn` 和 `esaimg.cdn1.vip` 直接重置连接
+
+### Result
+
+- `cloudflareimg.cdn.sn` 可正常返回改写后的链接
+- `edgeoneimg.cdn.sn` 保持可用
+- `esaimg.cdn1.vip` 可正常返回改写后的链接
+
 ## v1.3.1
 
 修复 SCDN 默认官方域名导致的上传失败问题。
