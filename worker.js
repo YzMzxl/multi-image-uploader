@@ -247,7 +247,7 @@ async function uploadScdn(file, fields = {}) {
   const outputFormat = normalizeScdnOutputFormat(fields.outputFormat);
   const passwordEnabled = parseBooleanField(fields.password_enabled);
   const imagePassword = String(fields.image_password || "").trim();
-  const cdnDomain = String(fields.cdn_domain || "").trim().toLowerCase();
+  const cdnDomain = normalizeScdnCdnDomain(fields.cdn_domain);
 
   if (passwordEnabled && !imagePassword) {
     throw createUpstreamError("SCDN password protection requires image_password when password_enabled is true.", "", 400);
@@ -421,6 +421,15 @@ function getWorkerFormFields(formData, fileField) {
 function normalizeScdnOutputFormat(value) {
   const normalized = String(value || "").trim().toLowerCase();
   return SCDN_OUTPUT_FORMATS.has(normalized) ? normalized : "auto";
+}
+
+function normalizeScdnCdnDomain(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized || normalized === "img.scdn.io") {
+    return "";
+  }
+
+  return normalized;
 }
 
 function parseBooleanField(value) {

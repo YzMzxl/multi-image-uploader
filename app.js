@@ -16,8 +16,7 @@ const SCDN_OUTPUT_FORMAT_OPTIONS = [
   { value: "webp_animated", label: "动图 WebP" },
 ];
 const SCDN_CDN_DOMAIN_OPTIONS = [
-  { value: "", label: "默认域名" },
-  { value: "img.scdn.io", label: "img.scdn.io" },
+  { value: "", label: "默认域名（img.scdn.io）" },
   { value: "cloudflareimg.cdn.sn", label: "cloudflareimg.cdn.sn" },
   { value: "edgeoneimg.cdn.sn", label: "edgeoneimg.cdn.sn" },
   { value: "esaimg.cdn1.vip", label: "esaimg.cdn1.vip" },
@@ -948,6 +947,10 @@ function sanitizeScdnOutputFormat(value) {
 
 function sanitizeScdnCdnDomain(value) {
   const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized || normalized === "img.scdn.io") {
+    return "";
+  }
+
   return SCDN_CDN_DOMAIN_OPTIONS.some((option) => option.value === normalized)
     ? normalized
     : "";

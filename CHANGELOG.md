@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.3.1
+
+修复 SCDN 默认官方域名导致的上传失败问题。
+
+### Fixed
+
+- 根据抓包确认，成功请求只发送 `outputFormat=auto`
+- 失败请求额外发送了 `cdn_domain=img.scdn.io`
+- 现在会把 `img.scdn.io` 视为默认域名，不再显式透传 `cdn_domain`
+- 前端 CDN 选项调整为“默认域名（img.scdn.io）”
+- Node 与 Worker 代理层都增加了同样的兜底逻辑
+
+### Result
+
+- 默认域名模式下，请求体只会发送必要字段
+- 避免再次触发上游 `fetch failed`
+
 ## v1.3.0
 
 将 SCDN 的上传参数改为前端可视化设置面板控制。

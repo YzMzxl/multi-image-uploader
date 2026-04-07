@@ -1,6 +1,6 @@
 {
   "name": "multi-image-uploader",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Multi-image uploader with SCDN, Lsky Pro+ multi-instance support, Node proxy, and browser workflow",
   "homepage": "https://github.com/YzMzxl/multi-image-uploader",
   "repository": {

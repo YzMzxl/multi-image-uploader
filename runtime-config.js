@@ -462,7 +462,7 @@ function normalizeScdnOutputFormat(value) {
 
 function normalizeScdnCdnDomain(value) {
   const normalized = String(value || "").trim().toLowerCase();
-  if (!normalized) {
+  if (!normalized || normalized === "img.scdn.io") {
     return "";
   }
 
