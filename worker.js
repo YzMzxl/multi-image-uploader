@@ -13,6 +13,7 @@ const IMGBB_UPLOAD_URL = "https://zh-cn.imgbb.com/json";
 const SCDN_UPLOAD_URL = "https://img.scdn.io/api/v1.php";
 const IMG58_GET_UPLOAD_URL = "https://im.58.com/msg/get_pic_upload_url";
 const SCDN_OUTPUT_FORMATS = new Set(["auto", "jpeg", "png", "webp", "gif", "webp_animated"]);
+const SCDN_UPLOAD_CANDIDATES = ["", "img.scdn.io", "cloudflareimg.cdn.sn", "edgeoneimg.cdn.sn", "esaimg.cdn1.vip"];
 const IMG58_GET_UPLOAD_URL_QUERY = new URLSearchParams({
   params: "LjAuMC4wJmFwcGlkPTEwMTQwLW1jcyU0MGppdG1vdVFyY0hzJmV4dGVuZF9mbGFnPTAmdW5yZWFkX2luZGV4PTEmc2RrX3ZlcnNpb249NjQzMiZkZXZpY2VfaWQ9NThBbm9ueW1vdXMxM2E1MTI2YS1hYWIxLTQxMjQtOTM2Mi05YjlhM2Q1Njg3ZjEmeHh6bF9zbWFydGlkPSZpZDU4PUNoQlBsMmVqUlhSbTdhTlFNTWRrQWclM0QlM0Q1dXNlcl9pZD01OEFub255bW91czEzYTUxMjZhLWFhYjEtNDEyNC05MzYyLTliOWEzZDU2ODdmMSZzb3VyY2U9MTQmaW1fdG9rZW49NThBbm9ueW1vdXMxM2E1MTI2YS1hYWIxLTQxMjQtOTM2Mi05YjlhM2Q1Njg3ZjEmY2xpZW50X3ZlcnNpb249MS4wJmNsaWVudF90eXBlPXBjd2ViJm9zX3R5cGU9Q2hyb21lJm9zX3ZlcnNpb249MTMy",
   version: "j1.0",
@@ -299,11 +300,8 @@ async function uploadScdnWithFallback(file, options) {
 }
 
 function buildScdnUploadCandidates(targetCdnDomain) {
-  if (targetCdnDomain === "esaimg.cdn1.vip") {
-    return ["esaimg.cdn1.vip"];
-  }
-
-  return ["", "esaimg.cdn1.vip"];
+  void targetCdnDomain;
+  return [...SCDN_UPLOAD_CANDIDATES];
 }
 
 async function performScdnUpload(file, options, uploadCdnDomain) {

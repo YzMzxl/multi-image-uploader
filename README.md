@@ -20,7 +20,7 @@
 - `multi-service`
 
 当前版本：
-- `v1.3.3`
+- `v1.3.4`
 
 ## 项目简介
 
@@ -143,11 +143,15 @@ https://img.scdn.io/api/v1.php
 
 兼容说明：
 - 官方文档标注 `cdn_domain` 为“需在后台配置”的能力
-- 实测中，默认上传和部分 `cdn_domain` 取值都可能直接触发上游连接重置
-- 本项目现在使用带回退的上传策略
-- 先尝试默认上传，失败后自动回退到 `esaimg.cdn1.vip` 作为上传通道
-- 上传成功后，再把返回链接改写成你在面板里选择的 CDN 域名
-- 这样可以兼容 `cloudflareimg.cdn.sn`、`edgeoneimg.cdn.sn`、`esaimg.cdn1.vip`
+- 实测中，默认上传和不同 `cdn_domain` 取值的稳定性并不一致
+- 本项目现在会轮询以下上传候选：
+  - 默认上传
+  - `img.scdn.io`
+  - `cloudflareimg.cdn.sn`
+  - `edgeoneimg.cdn.sn`
+  - `esaimg.cdn1.vip`
+- 一旦其中任意一种上传成功，就提取成功链接的路径
+- 最终再按前端面板里选择的“输出域名”改写返回链接
 
 在本项目中，这些设置项由前端可视化面板控制：
 - 输出格式

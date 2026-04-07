@@ -360,7 +360,7 @@ function renderServiceSettingsPanel() {
       </label>
 
       <label class="settings-field">
-        <span class="settings-label">CDN 域名</span>
+        <span class="settings-label">输出域名</span>
         <select data-scdn-field="cdnDomain">
           ${SCDN_CDN_DOMAIN_OPTIONS.map((option) => `
             <option value="${escapeAttr(option.value)}" ${option.value === settings.cdnDomain ? "selected" : ""}>
@@ -368,7 +368,7 @@ function renderServiceSettingsPanel() {
             </option>
           `).join("")}
         </select>
-        <small class="settings-help">留空表示使用 SCDN 默认返回域名。</small>
+        <small class="settings-help">这里只控制最终返回链接的域名，不直接决定上传通道。</small>
       </label>
     </div>
     <p class="service-note">设置修改后即时生效，无需重启本地服务。</p>

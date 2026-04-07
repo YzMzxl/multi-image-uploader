@@ -1,4 +1,11 @@
 const { getScdnConfig } = require("../runtime-config");
+const SCDN_UPLOAD_CANDIDATES = [
+  "",
+  "img.scdn.io",
+  "cloudflareimg.cdn.sn",
+  "edgeoneimg.cdn.sn",
+  "esaimg.cdn1.vip",
+];
 
 async function upload({ file, fields }) {
   const config = getScdnConfig(fields);
@@ -50,16 +57,8 @@ async function uploadWithFallback(file, config) {
 }
 
 function buildUploadCandidates(targetCdnDomain) {
-  const candidates = [];
-
-  if (targetCdnDomain === "esaimg.cdn1.vip") {
-    candidates.push("esaimg.cdn1.vip");
-  } else {
-    candidates.push("");
-    candidates.push("esaimg.cdn1.vip");
-  }
-
-  return [...new Set(candidates)];
+  void targetCdnDomain;
+  return [...SCDN_UPLOAD_CANDIDATES];
 }
 
 async function performScdnUpload(file, config, uploadCdnDomain) {
