@@ -4,6 +4,24 @@ const FIELD_CONFIG = [
   { key: "html", label: "HTML" },
   { key: "bbcode", label: "BBCode" },
 ];
+const LOCAL_STORAGE_KEYS = {
+  scdnSettings: "multi-image-uploader:scdn-settings",
+};
+const SCDN_OUTPUT_FORMAT_OPTIONS = [
+  { value: "auto", label: "自动" },
+  { value: "jpeg", label: "JPEG" },
+  { value: "png", label: "PNG" },
+  { value: "webp", label: "WebP" },
+  { value: "gif", label: "GIF" },
+  { value: "webp_animated", label: "动图 WebP" },
+];
+const SCDN_CDN_DOMAIN_OPTIONS = [
+  { value: "", label: "默认域名" },
+  { value: "img.scdn.io", label: "img.scdn.io" },
+  { value: "cloudflareimg.cdn.sn", label: "cloudflareimg.cdn.sn" },
+  { value: "edgeoneimg.cdn.sn", label: "edgeoneimg.cdn.sn" },
+  { value: "esaimg.cdn1.vip", label: "esaimg.cdn1.vip" },
+];
 
 const PROJECT_REPO_URL = "https://github.com/YzMzxl/multi-image-uploader";
 
@@ -20,6 +38,9 @@ const state = {
   logs: [],
   uploadBusy: false,
   idSeed: 0,
+  serviceSettings: {
+    scdn: loadStoredScdnSettings(),
+  },
 };
 
 const dom = {
@@ -38,6 +59,7 @@ const dom = {
   queueList: document.getElementById("queueList"),
   emptyState: document.getElementById("emptyState"),
   serviceCard: document.getElementById("serviceCard"),
+  serviceSettingsPanel: document.getElementById("serviceSettingsPanel"),
   autoCopyToggle: document.getElementById("autoCopyToggle"),
   webpToggle: document.getElementById("webpToggle"),
 };
@@ -62,23 +84,37 @@ async function init() {
 }
 
 async function loadServices() {
-  const response = await fetch("./services.json", { cache: "no-store" });
-  if (!response.ok) {
-    throw new Error(`接口配置加载失败：HTTP ${response.status}`);
+  const sources = ["/api/services", "./services.json"];
+  let lastError = null;
+
+  for (const source of sources) {
+    try {
+      const response = await fetch(source, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`接口配置加载失败：HTTP ${response.status}`);
+      }
+
+      const services = await response.json();
+      if (!Array.isArray(services)) {
+        throw new Error("接口配置格式无效");
+      }
+
+      if (services.length) {
+        return services;
+      }
+    } catch (error) {
+      lastError = error;
+    }
   }
 
-  const services = await response.json();
-  if (!Array.isArray(services)) {
-    throw new Error("接口配置格式无效");
-  }
-
-  return services;
+  throw lastError || new Error("接口配置为空");
 }
 
 function showServiceLoadError(error) {
   const message = String(error?.message || error || "未知错误");
   dom.serviceTabs.innerHTML = "";
   dom.serviceCard.innerHTML = `<p class="service-note">接口配置加载失败：${escapeHtml(message)}</p>`;
+  dom.serviceSettingsPanel.innerHTML = `<p class="service-note">接口设置面板不可用。</p>`;
   dom.activeServiceName.textContent = "加载失败";
   dom.activeServiceSupport.textContent = "-";
   dom.fileInput.accept = "image/*,video/*";
@@ -90,6 +126,9 @@ function bindEvents() {
   dom.serviceTabs.addEventListener("click", handleServiceTabClick);
   dom.autoCopyFormatSwitch.addEventListener("click", handleAutoCopyFormatClick);
   dom.queueList.addEventListener("click", handleQueueAction);
+  dom.serviceSettingsPanel.addEventListener("input", handleServiceSettingsInput);
+  dom.serviceSettingsPanel.addEventListener("change", handleServiceSettingsInput);
+  dom.serviceSettingsPanel.addEventListener("click", handleServiceSettingsAction);
   dom.clearBtn.addEventListener("click", clearQueue);
   bindScrollbarReveal(dom.dockScroll);
   bindScrollbarReveal(dom.switchRail);
@@ -161,6 +200,7 @@ function render() {
   renderServiceTabs();
   renderAutoCopyFormatSwitch();
   renderServiceCard();
+  renderServiceSettingsPanel();
   renderQueue();
 
   const activeService = getActiveService();
@@ -260,6 +300,79 @@ function renderServiceCard() {
       </div>
     </dl>
     <p class="service-note">${escapeHtml(service.note)}</p>
+  `;
+}
+
+function renderServiceSettingsPanel() {
+  const service = getActiveService();
+  if (!service) {
+    dom.serviceSettingsPanel.innerHTML = `<p class="service-note">接口设置尚未加载。</p>`;
+    return;
+  }
+
+  if (service.id !== "scdn") {
+    dom.serviceSettingsPanel.innerHTML = `<p class="service-note">当前接口没有额外的可视化设置项。</p>`;
+    return;
+  }
+
+  const settings = state.serviceSettings.scdn;
+  dom.serviceSettingsPanel.innerHTML = `
+    <div class="service-card-head">
+      <div>
+        <span class="eyebrow">SCDN</span>
+        <h3>上传参数</h3>
+      </div>
+      <button class="mini-btn" type="button" data-action="reset-scdn-settings">恢复默认</button>
+    </div>
+    <div class="service-summary">这些设置只保存在当前浏览器，并会随上传请求发送到代理服务，不写入 .env。</div>
+    <div class="settings-grid">
+      <label class="settings-field">
+        <span class="settings-label">输出格式</span>
+        <select data-scdn-field="outputFormat">
+          ${SCDN_OUTPUT_FORMAT_OPTIONS.map((option) => `
+            <option value="${escapeAttr(option.value)}" ${option.value === settings.outputFormat ? "selected" : ""}>
+              ${escapeHtml(option.label)}
+            </option>
+          `).join("")}
+        </select>
+        <small class="settings-help">支持 auto、jpeg、png、webp、gif、webp_animated。</small>
+      </label>
+
+      <div class="settings-field">
+        <span class="settings-label">密码保护</span>
+        <label class="toggle">
+          <input type="checkbox" data-scdn-field="passwordEnabled" ${settings.passwordEnabled ? "checked" : ""} />
+          <span class="toggle-ui" aria-hidden="true"></span>
+          <span class="toggle-text">启用图片访问密码</span>
+        </label>
+        <small class="settings-help">开启后，图片访问前需要输入密码。</small>
+      </div>
+
+      <label class="settings-field">
+        <span class="settings-label">图片密码</span>
+        <input
+          type="text"
+          data-scdn-field="imagePassword"
+          value="${escapeAttr(settings.imagePassword)}"
+          placeholder="开启密码保护后必填"
+          ${settings.passwordEnabled ? "" : "disabled"}
+        />
+        <small class="settings-help">密码会随当前上传请求一起提交。</small>
+      </label>
+
+      <label class="settings-field">
+        <span class="settings-label">CDN 域名</span>
+        <select data-scdn-field="cdnDomain">
+          ${SCDN_CDN_DOMAIN_OPTIONS.map((option) => `
+            <option value="${escapeAttr(option.value)}" ${option.value === settings.cdnDomain ? "selected" : ""}>
+              ${escapeHtml(option.label)}
+            </option>
+          `).join("")}
+        </select>
+        <small class="settings-help">留空表示使用 SCDN 默认返回域名。</small>
+      </label>
+    </div>
+    <p class="service-note">设置修改后即时生效，无需重启本地服务。</p>
   `;
 }
 
@@ -381,6 +494,55 @@ function handleQueueAction(event) {
 
   if (action === "copy" && item.outputs?.[field]) {
     copyText(item.outputs[field], `已复制 ${field.toUpperCase()}。`);
+  }
+}
+
+function handleServiceSettingsInput(event) {
+  const service = getActiveService();
+  if (!service || service.id !== "scdn") {
+    return;
+  }
+
+  const field = event.target.dataset.scdnField;
+  if (!field) {
+    return;
+  }
+
+  const nextSettings = {
+    ...state.serviceSettings.scdn,
+  };
+
+  switch (field) {
+    case "outputFormat":
+      nextSettings.outputFormat = sanitizeScdnOutputFormat(event.target.value);
+      break;
+    case "passwordEnabled":
+      nextSettings.passwordEnabled = event.target.checked;
+      break;
+    case "imagePassword":
+      nextSettings.imagePassword = String(event.target.value || "").trim();
+      break;
+    case "cdnDomain":
+      nextSettings.cdnDomain = sanitizeScdnCdnDomain(event.target.value);
+      break;
+    default:
+      return;
+  }
+
+  state.serviceSettings.scdn = sanitizeScdnSettings(nextSettings);
+  persistScdnSettings();
+  renderServiceSettingsPanel();
+}
+
+function handleServiceSettingsAction(event) {
+  const button = event.target.closest("[data-action]");
+  if (!button) return;
+
+  if (button.dataset.action === "reset-scdn-settings") {
+    state.serviceSettings.scdn = createDefaultScdnSettings();
+    persistScdnSettings();
+    renderServiceSettingsPanel();
+    pushLog("已恢复 SCDN 默认设置。");
   }
 }
 
@@ -733,6 +895,64 @@ function getServiceById(id) {
   return SERVICES.find((service) => service.id === id) || SERVICES[0] || null;
 }
 
+function createDefaultScdnSettings() {
+  return {
+    outputFormat: "auto",
+    passwordEnabled: false,
+    imagePassword: "",
+    cdnDomain: "",
+  };
+}
+
+function loadStoredScdnSettings() {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.scdnSettings);
+    if (!raw) {
+      return createDefaultScdnSettings();
+    }
+
+    const parsed = JSON.parse(raw);
+    return sanitizeScdnSettings(parsed);
+  } catch (error) {
+    return createDefaultScdnSettings();
+  }
+}
+
+function persistScdnSettings() {
+  try {
+    localStorage.setItem(
+      LOCAL_STORAGE_KEYS.scdnSettings,
+      JSON.stringify(state.serviceSettings.scdn),
+    );
+  } catch (error) {
+    return;
+  }
+}
+
+function sanitizeScdnSettings(value) {
+  const nextValue = value && typeof value === "object" ? value : {};
+  return {
+    outputFormat: sanitizeScdnOutputFormat(nextValue.outputFormat),
+    passwordEnabled: Boolean(nextValue.passwordEnabled),
+    imagePassword: String(nextValue.imagePassword || "").trim(),
+    cdnDomain: sanitizeScdnCdnDomain(nextValue.cdnDomain),
+  };
+}
+
+function sanitizeScdnOutputFormat(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return SCDN_OUTPUT_FORMAT_OPTIONS.some((option) => option.value === normalized)
+    ? normalized
+    : "auto";
+}
+
+function sanitizeScdnCdnDomain(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return SCDN_CDN_DOMAIN_OPTIONS.some((option) => option.value === normalized)
+    ? normalized
+    : "";
+}
+
 function buildAdapterStub(service) {
   if (service.uploadMode === "real") {
     return `const service = {
@@ -827,6 +1047,20 @@ function appendServiceFormFields(formData, service, requestFileName) {
   if (service.requestNameField) {
     formData.append(service.requestNameField, requestFileName);
   }
+
+  if (service.id === "scdn") {
+    const settings = state.serviceSettings.scdn;
+    formData.append("outputFormat", settings.outputFormat);
+
+    if (settings.passwordEnabled) {
+      formData.append("password_enabled", "true");
+      formData.append("image_password", settings.imagePassword);
+    }
+
+    if (settings.cdnDomain) {
+      formData.append("cdn_domain", settings.cdnDomain);
+    }
+  }
 }
 
 function replaceExtension(name, nextExtension) {
@@ -895,6 +1129,13 @@ function validateFileForService(service, file) {
 
   if (service.maxFileSizeBytes && file.size > service.maxFileSizeBytes) {
     return `文件超出大小限制，当前接口最大支持 ${formatBytes(service.maxFileSizeBytes)}。`;
+  }
+
+  if (service.id === "scdn") {
+    const settings = state.serviceSettings.scdn;
+    if (settings.passwordEnabled && !settings.imagePassword) {
+      return "SCDN 已开启密码保护，请先填写图片密码。";
+    }
   }
 
   return "";

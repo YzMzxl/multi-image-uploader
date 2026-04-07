@@ -26,6 +26,7 @@ async function executeApiRequest({
   headers,
   env = getProjectEnv(),
   getFile,
+  getFields = async () => ({}),
 }) {
   if (!pathname?.startsWith("/api/")) {
     return null;
@@ -81,6 +82,8 @@ async function executeApiRequest({
     }, headers);
   }
 
+  const fields = await getFields(service);
+
   try {
     const handler = SERVICE_HANDLERS[service.handlerId || service.id];
     if (!handler?.upload) {
@@ -92,6 +95,7 @@ async function executeApiRequest({
       headers,
       env,
       service,
+      fields,
     });
 
     return buildJsonResponse(200, payload, headers);
@@ -121,6 +125,7 @@ async function handleNodeApiRequest(req, env) {
         },
       );
     },
+    getFields: async () => normalizeNodeRequestFields(req.body),
   });
 }
 
@@ -142,6 +147,15 @@ async function handleWorkerRequest(request, env = {}) {
       const formData = await formDataPromise;
       const file = formData.get(service.fileField);
       return file instanceof File ? file : null;
+    },
+    getFields: async (service) => {
+      if (request.method !== "POST") {
+        return {};
+      }
+
+      formDataPromise ||= request.formData();
+      const formData = await formDataPromise;
+      return getWorkerFormFields(formData, service.fileField);
     },
   });
 
@@ -171,6 +185,54 @@ function getNodeUploadedFile(files, fieldName) {
   }
 
   return files.find((file) => file.fieldname === fieldName) || null;
+}
+
+function normalizeNodeRequestFields(body) {
+  if (!body || typeof body !== "object") {
+    return {};
+  }
+
+  const fields = {};
+  for (const [key, value] of Object.entries(body)) {
+    if (Array.isArray(value)) {
+      fields[key] = value.map((entry) => String(entry));
+      continue;
+    }
+
+    if (value !== undefined && value !== null) {
+      fields[key] = String(value);
+    }
+  }
+
+  return fields;
+}
+
+function getWorkerFormFields(formData, fileField) {
+  const fields = {};
+
+  for (const [key, value] of formData.entries()) {
+    if (key === fileField && value instanceof File) {
+      continue;
+    }
+
+    if (value instanceof File) {
+      continue;
+    }
+
+    if (fields[key] === undefined) {
+      fields[key] = String(value);
+      continue;
+    }
+
+    if (Array.isArray(fields[key])) {
+      fields[key].push(String(value));
+      continue;
+    }
+
+    fields[key] = [fields[key], String(value)];
+  }
+
+  return fields;
 }
 
 function buildJsonResponse(status, payload, requestHeaders) {

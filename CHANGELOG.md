@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.3.0
+
+将 SCDN 的上传参数改为前端可视化设置面板控制。
+
+### Added
+
+- 新增 SCDN 可视化设置面板
+- 新增浏览器本地持久化的 SCDN 设置存储
+- 新增上传时随请求透传的 SCDN 参数：
+  - `outputFormat`
+  - `password_enabled`
+  - `image_password`
+  - `cdn_domain`
+- 新增 Node 路由层对非文件表单字段的统一透传
+- 新增 Worker 示例对 SCDN 表单字段的基础支持
+
+### Changed
+
+- SCDN 不再依赖 `.env` 控制上传设置
+- SCDN 服务说明更新为前端设置面板模式
+- `/api/settings` 中的 SCDN 配置改为输出能力和默认值信息
+
+### Improved
+
+- 前端会在开启密码保护但未填写密码时提前阻止上传
+- 设置修改后即时生效，无需重启本地服务
+- 版本提升至 `v1.3.0`
+
 ## v1.2.0
 
 新增 SCDN 图床接入。

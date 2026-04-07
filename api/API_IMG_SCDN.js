@@ -1,10 +1,10 @@
 const { getScdnConfig } = require("../runtime-config");
 
-async function upload({ file, env }) {
-  const config = getScdnConfig(env);
+async function upload({ file, fields }) {
+  const config = getScdnConfig(fields);
   if (config.passwordEnabled && !config.imagePassword) {
     throw createConfigError(
-      "SCDN password protection requires SCDN_IMAGE_PASSWORD when SCDN_PASSWORD_ENABLED is true.",
+      "SCDN password protection requires image_password when password_enabled is true.",
     );
   }
 

@@ -110,7 +110,7 @@ function applyEnvText(content, env) {
 function buildRuntimeServices(env = process.env) {
   env = ensureProjectEnvLoaded(env);
   return [
-    ...BASE_SERVICE_DEFINITIONS.map((service) => applyRuntimeServiceOverrides(service, env)),
+    ...BASE_SERVICE_DEFINITIONS,
     ...getPublicLskyServices(env),
   ];
 }
@@ -121,7 +121,7 @@ function buildRuntimeSettings(env = process.env) {
   const proxyToken = getProxyAuthToken(env);
   const lskyConfigs = getLskyConfigs(env);
   const primary = lskyConfigs[0] || buildEmptyLskyConfig();
-  const scdn = getScdnConfig(env);
+  const scdn = getScdnConfig();
 
   return {
     auth: {
@@ -173,43 +173,25 @@ function getProxyAuthToken(env = process.env) {
 }
 
 function getScdnConfig(env = process.env) {
-  env = ensureProjectEnvLoaded(env);
-
-  const imagePassword = firstNonEmpty(env.SCDN_IMAGE_PASSWORD);
-  const passwordEnabledOverride = parseOptionalBoolean(env.SCDN_PASSWORD_ENABLED);
+  const imagePassword = firstNonEmpty(
+    env?.image_password,
+    env?.imagePassword,
+  );
+  const passwordEnabledOverride = parseOptionalBoolean(
+    firstNonEmpty(env?.password_enabled, env?.passwordEnabled),
+  );
 
   return {
     uploadUrl: SCDN_UPLOAD_URL,
-    outputFormat: normalizeScdnOutputFormat(firstNonEmpty(env.SCDN_OUTPUT_FORMAT)),
+    outputFormat: normalizeScdnOutputFormat(
+      firstNonEmpty(env?.outputFormat),
+    ),
     passwordEnabled: passwordEnabledOverride ?? Boolean(imagePassword),
     imagePassword,
-    cdnDomain: normalizeScdnCdnDomain(firstNonEmpty(env.SCDN_CDN_DOMAIN)),
-    maxFileSizeBytes: parseOptionalNumber(env.SCDN_MAX_FILE_SIZE_BYTES),
-  };
-}
-
-function applyRuntimeServiceOverrides(service, env = process.env) {
-  if (service.id === "scdn") {
-    return buildPublicScdnService(service, env);
-  }
-
-  return service;
-}
-
-function buildPublicScdnService(baseService, env = process.env) {
-  const config = getScdnConfig(env);
-  const noteParts = [
-    config.outputFormat !== SCDN_DEFAULT_OUTPUT_FORMAT ? `outputFormat=${config.outputFormat}` : "",
-    config.passwordEnabled ? "password=enabled" : "",
-    config.cdnDomain ? `cdn_domain=${config.cdnDomain}` : "",
-  ].filter(Boolean).join(", ");
-
-  return {
-    ...baseService,
-    maxFileSizeBytes: config.maxFileSizeBytes || baseService.maxFileSizeBytes,
-    note: noteParts
-      ? `${baseService.note} Current env: ${noteParts}. Effective settings: /api/settings`
-      : `${baseService.note} Effective settings: /api/settings`,
+    cdnDomain: normalizeScdnCdnDomain(
+      firstNonEmpty(env?.cdn_domain, env?.cdnDomain),
+    ),
+    maxFileSizeBytes: parseOptionalNumber(env?.maxFileSizeBytes),
   };
 }
 

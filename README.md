@@ -4,7 +4,7 @@
 - https://github.com/YzMzxl/multi-image-uploader
 
 建议 GitHub 仓库描述：
-- 多图床上传小工具，支持 SCDN、Lsky Pro+ 多实例、Node 代理与浏览器上传工作流
+- 多图床上传小工具，支持 SCDN 可视化设置、Lsky Pro+ 多实例、Node 代理与浏览器上传工作流
 
 建议 GitHub Topics：
 - `image-upload`
@@ -20,7 +20,7 @@
 - `multi-service`
 
 当前版本：
-- `v1.2.0`
+- `v1.3.0`
 
 ## 项目简介
 
@@ -29,6 +29,7 @@
 - Node.js 本地代理服务
 - 多图床上传适配层
 - 运行时环境变量配置
+- SCDN 可视化设置面板
 - Lsky Pro+ 多实例支持
 
 当前内置服务：
@@ -47,7 +48,8 @@
 - 上传前可选转 WebP
 - Node 代理统一处理 CORS、鉴权、错误响应
 - 支持通过 `.env` 配置一个或多个 Lsky Pro+ 服务
-- 支持通过 `.env` 调整 SCDN 上传格式、密码保护和 CDN 域名
+- SCDN 通过前端设置面板控制输出格式、密码保护和 CDN 域名
+- SCDN 设置保存在当前浏览器，无需修改 `.env`
 
 ## 项目结构
 
@@ -68,8 +70,8 @@
     |-- API_IMG_CELINE.js
     |-- API_IMG_IMGBB.js
     |-- API_IMG_IPFS.js
+    |-- API_IMG_LSKY.js
     `-- API_IMG_SCDN.js
-    `-- API_IMG_LSKY.js
 ```
 
 说明：
@@ -120,16 +122,12 @@ http://127.0.0.1:8000
 常用变量：
 - `PORT`：本地服务端口
 - `AUTH_TOKEN`：保护 `/api/*` 上传接口
-- `SCDN_OUTPUT_FORMAT`：SCDN 输出格式
-- `SCDN_PASSWORD_ENABLED`：SCDN 是否启用密码保护
-- `SCDN_IMAGE_PASSWORD`：SCDN 图片密码
-- `SCDN_CDN_DOMAIN`：SCDN 返回链接所用 CDN 域名
 - `LSKY_PRO_SERVICES`：多个 Lsky 实例的 JSON 数组
 - `LSKY_PRO_*`：单个 Lsky 实例的兼容配置
 
 完整说明见：[.env.example](./.env.example)
 
-## SCDN 配置
+## SCDN 设置面板
 
 SCDN 通过公共接口上传，Node 代理会向以下地址转发请求：
 
@@ -143,16 +141,19 @@ https://img.scdn.io/api/v1.php
 - `image_password`
 - `cdn_domain`
 
-项目中的对应环境变量：
+在本项目中，这些设置项由前端可视化面板控制：
+- 输出格式
+- 密码保护开关
+- 图片访问密码
+- CDN 域名
 
-```env
-SCDN_OUTPUT_FORMAT=auto
-SCDN_PASSWORD_ENABLED=
-SCDN_IMAGE_PASSWORD=
-SCDN_CDN_DOMAIN=
-```
+特点：
+- 设置保存在当前浏览器 `localStorage`
+- 修改后即时生效
+- 无需修改 `.env`
+- 上传时随请求一起发送到本地代理服务
 
-文档中的 `outputFormat` 支持值：
+支持的输出格式：
 - `auto`
 - `jpeg`
 - `png`
@@ -192,7 +193,7 @@ LSKY_PRO_STORAGE_ID=1
 
 - `GET /api/health`：健康检查
 - `GET /api/services`：返回前端服务列表
-- `GET /api/settings`：返回脱敏后的运行时配置
+- `GET /api/settings`：返回脱敏后的运行时配置与 SCDN 能力信息
 - `POST /api/scdn-upload`：SCDN 上传
 - `POST /api/lsky-upload/<key>`：指定 Lsky 实例上传
 - `POST /api/*`：其他图床上传接口

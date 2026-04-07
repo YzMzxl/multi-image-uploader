@@ -12,6 +12,7 @@ const IPFS_GATEWAY_BASE_URL = "https://ipfs.io/ipfs";
 const IMGBB_UPLOAD_URL = "https://zh-cn.imgbb.com/json";
 const SCDN_UPLOAD_URL = "https://img.scdn.io/api/v1.php";
 const IMG58_GET_UPLOAD_URL = "https://im.58.com/msg/get_pic_upload_url";
+const SCDN_OUTPUT_FORMATS = new Set(["auto", "jpeg", "png", "webp", "gif", "webp_animated"]);
 const IMG58_GET_UPLOAD_URL_QUERY = new URLSearchParams({
   params: "LjAuMC4wJmFwcGlkPTEwMTQwLW1jcyU0MGppdG1vdVFyY0hzJmV4dGVuZF9mbGFnPTAmdW5yZWFkX2luZGV4PTEmc2RrX3ZlcnNpb249NjQzMiZkZXZpY2VfaWQ9NThBbm9ueW1vdXMxM2E1MTI2YS1hYWIxLTQxMjQtOTM2Mi05YjlhM2Q1Njg3ZjEmeHh6bF9zbWFydGlkPSZpZDU4PUNoQlBsMmVqUlhSbTdhTlFNTWRrQWclM0QlM0Q1dXNlcl9pZD01OEFub255bW91czEzYTUxMjZhLWFhYjEtNDEyNC05MzYyLTliOWEzZDU2ODdmMSZzb3VyY2U9MTQmaW1fdG9rZW49NThBbm9ueW1vdXMxM2E1MTI2YS1hYWIxLTQxMjQtOTM2Mi05YjlhM2Q1Njg3ZjEmY2xpZW50X3ZlcnNpb249MS4wJmNsaWVudF90eXBlPXBjd2ViJm9zX3R5cGU9Q2hyb21lJm9zX3ZlcnNpb249MTMy",
   version: "j1.0",
@@ -46,6 +47,15 @@ async function handleRequest(request) {
       const file = formData.get(service.fileField);
       return file instanceof File ? file : null;
     },
+    getFields: async (service) => {
+      if (request.method !== "POST") {
+        return {};
+      }
+
+      formDataPromise ||= request.formData();
+      const formData = await formDataPromise;
+      return getWorkerFormFields(formData, service.fileField);
+    },
   });
 
   if (!descriptor) {
@@ -68,6 +78,7 @@ async function executeApiRequest({
   method,
   headers,
   getFile,
+  getFields = async () => ({}),
 }) {
   if (!pathname?.startsWith("/api/")) {
     return null;
@@ -107,8 +118,10 @@ async function executeApiRequest({
     }, headers);
   }
 
+  const fields = await getFields(service);
+
   try {
-    const payload = await uploadByServiceId(service.id, file);
+    const payload = await uploadByServiceId(service.id, file, fields);
     return buildJsonResponse(200, payload, headers);
   } catch (error) {
     return buildJsonResponse(Number(error?.statusCode || 500), {
@@ -119,7 +132,7 @@ async function executeApiRequest({
   }
 }
 
-async function uploadByServiceId(serviceId, file) {
+async function uploadByServiceId(serviceId, file, fields) {
   switch (serviceId) {
     case "celine":
       return uploadCeline(file);
@@ -130,7 +143,7 @@ async function uploadByServiceId(serviceId, file) {
     case "58img":
       return upload58img(file);
     case "scdn":
-      return uploadScdn(file);
+      return uploadScdn(file, fields);
     default:
       throw createUpstreamError("Service handler not found", serviceId, 500);
   }
@@ -230,13 +243,24 @@ async function upload58img(file) {
   };
 }
 
-async function uploadScdn(file) {
+async function uploadScdn(file, fields = {}) {
+  const outputFormat = normalizeScdnOutputFormat(fields.outputFormat);
+  const passwordEnabled = parseBooleanField(fields.password_enabled);
+  const imagePassword = String(fields.image_password || "").trim();
+  const cdnDomain = String(fields.cdn_domain || "").trim().toLowerCase();
+
+  if (passwordEnabled && !imagePassword) {
+    throw createUpstreamError("SCDN password protection requires image_password when password_enabled is true.", "", 400);
+  }
+
   const upstream = await postMultipart({
     url: SCDN_UPLOAD_URL,
     fileField: "image",
     file,
     fields: {
-      outputFormat: "auto",
+      outputFormat,
+      ...(passwordEnabled ? { password_enabled: "true", image_password: imagePassword } : {}),
+      ...(cdnDomain ? { cdn_domain: cdnDomain } : {}),
     },
   });
 
@@ -254,6 +278,9 @@ async function uploadScdn(file) {
       originalSize: upstream?.data?.original_size ?? file.size ?? "",
       compressedSize: upstream?.data?.compressed_size ?? "",
       compressionRatio: upstream?.data?.compression_ratio ?? "",
+      outputFormat,
+      passwordEnabled,
+      cdnDomain,
       upstream: SCDN_UPLOAD_URL,
     },
   };
@@ -371,6 +398,34 @@ function extractFileNameFromUrl(url) {
   } catch {
     return "";
   }
+}
+
+function getWorkerFormFields(formData, fileField) {
+  const fields = {};
+
+  for (const [key, value] of formData.entries()) {
+    if (key === fileField && value instanceof File) {
+      continue;
+    }
+
+    if (value instanceof File) {
+      continue;
+    }
+
+    fields[key] = String(value);
+  }
+
+  return fields;
+}
+
+function normalizeScdnOutputFormat(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return SCDN_OUTPUT_FORMATS.has(normalized) ? normalized : "auto";
+}
+
+function parseBooleanField(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["1", "true", "yes", "on"].includes(normalized);
 }
 
 async function safeReadText(response) {
