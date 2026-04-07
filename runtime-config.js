@@ -24,6 +24,22 @@ const LSKY_ACCENT_PALETTE = [
   "#9333ea",
   "#ea580c",
 ];
+const SCDN_UPLOAD_URL = "https://img.scdn.io/api/v1.php";
+const SCDN_DEFAULT_OUTPUT_FORMAT = "auto";
+const SCDN_SUPPORTED_OUTPUT_FORMATS = [
+  "auto",
+  "jpeg",
+  "png",
+  "webp",
+  "gif",
+  "webp_animated",
+];
+const SCDN_SUPPORTED_CDN_DOMAINS = [
+  "img.scdn.io",
+  "cloudflareimg.cdn.sn",
+  "edgeoneimg.cdn.sn",
+  "esaimg.cdn1.vip",
+];
 
 let projectEnvLoaded = false;
 
@@ -94,7 +110,7 @@ function applyEnvText(content, env) {
 function buildRuntimeServices(env = process.env) {
   env = ensureProjectEnvLoaded(env);
   return [
-    ...BASE_SERVICE_DEFINITIONS,
+    ...BASE_SERVICE_DEFINITIONS.map((service) => applyRuntimeServiceOverrides(service, env)),
     ...getPublicLskyServices(env),
   ];
 }
@@ -105,10 +121,21 @@ function buildRuntimeSettings(env = process.env) {
   const proxyToken = getProxyAuthToken(env);
   const lskyConfigs = getLskyConfigs(env);
   const primary = lskyConfigs[0] || buildEmptyLskyConfig();
+  const scdn = getScdnConfig(env);
 
   return {
     auth: {
       proxyTokenConfigured: Boolean(proxyToken),
+    },
+    scdn: {
+      uploadUrl: scdn.uploadUrl,
+      outputFormat: scdn.outputFormat,
+      passwordEnabled: scdn.passwordEnabled,
+      passwordConfigured: Boolean(scdn.imagePassword),
+      cdnDomain: scdn.cdnDomain,
+      maxFileSizeBytes: scdn.maxFileSizeBytes,
+      supportedOutputFormats: [...SCDN_SUPPORTED_OUTPUT_FORMATS],
+      supportedCdnDomains: [...SCDN_SUPPORTED_CDN_DOMAINS],
     },
     lsky: {
       enabled: lskyConfigs.length > 0,
@@ -143,6 +170,47 @@ function getServerConfig(env = process.env) {
 function getProxyAuthToken(env = process.env) {
   env = ensureProjectEnvLoaded(env);
   return firstNonEmpty(env.AUTH_TOKEN, env.IMG_AUTH_TOKEN);
+}
+
+function getScdnConfig(env = process.env) {
+  env = ensureProjectEnvLoaded(env);
+
+  const imagePassword = firstNonEmpty(env.SCDN_IMAGE_PASSWORD);
+  const passwordEnabledOverride = parseOptionalBoolean(env.SCDN_PASSWORD_ENABLED);
+
+  return {
+    uploadUrl: SCDN_UPLOAD_URL,
+    outputFormat: normalizeScdnOutputFormat(firstNonEmpty(env.SCDN_OUTPUT_FORMAT)),
+    passwordEnabled: passwordEnabledOverride ?? Boolean(imagePassword),
+    imagePassword,
+    cdnDomain: normalizeScdnCdnDomain(firstNonEmpty(env.SCDN_CDN_DOMAIN)),
+    maxFileSizeBytes: parseOptionalNumber(env.SCDN_MAX_FILE_SIZE_BYTES),
+  };
+}
+
+function applyRuntimeServiceOverrides(service, env = process.env) {
+  if (service.id === "scdn") {
+    return buildPublicScdnService(service, env);
+  }
+
+  return service;
+}
+
+function buildPublicScdnService(baseService, env = process.env) {
+  const config = getScdnConfig(env);
+  const noteParts = [
+    config.outputFormat !== SCDN_DEFAULT_OUTPUT_FORMAT ? `outputFormat=${config.outputFormat}` : "",
+    config.passwordEnabled ? "password=enabled" : "",
+    config.cdnDomain ? `cdn_domain=${config.cdnDomain}` : "",
+  ].filter(Boolean).join(", ");
+
+  return {
+    ...baseService,
+    maxFileSizeBytes: config.maxFileSizeBytes || baseService.maxFileSizeBytes,
+    note: noteParts
+      ? `${baseService.note} Current env: ${noteParts}. Effective settings: /api/settings`
+      : `${baseService.note} Effective settings: /api/settings`,
+  };
 }
 
 function getPublicLskyServices(env = process.env) {
@@ -399,6 +467,26 @@ function normalizeAccepts(value) {
   return accepts.length ? accepts : ["image/*"];
 }
 
+function normalizeScdnOutputFormat(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) {
+    return SCDN_DEFAULT_OUTPUT_FORMAT;
+  }
+
+  return SCDN_SUPPORTED_OUTPUT_FORMATS.includes(normalized)
+    ? normalized
+    : SCDN_DEFAULT_OUTPUT_FORMAT;
+}
+
+function normalizeScdnCdnDomain(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) {
+    return "";
+  }
+
+  return normalized;
+}
+
 function safeHostname(value) {
   try {
     return new URL(value).host;
@@ -507,6 +595,7 @@ module.exports = {
   ensureProjectEnvLoaded,
   getProjectEnv,
   getProxyAuthToken,
+  getScdnConfig,
   getLskyConfig,
   getLskyConfigByKey,
   getLskyConfigs,

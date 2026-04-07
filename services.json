@@ -70,5 +70,22 @@
     "resultBaseUrl": "",
     "maxFileSizeBytes": 20971520,
     "accepts": ["image/*"]
+  },
+  {
+    "id": "scdn",
+    "name": "SCDN",
+    "subtitle": "公益图床",
+    "accent": "#2563eb",
+    "mode": "Node 代理",
+    "summary": "通过 Node.js 同源代理转发到 img.scdn.io 上传接口，支持可选的输出格式、密码保护和 CDN 域名参数。",
+    "method": "POST",
+    "endpoint": "/api/scdn-upload",
+    "auth": "无",
+    "fileField": "image",
+    "successPath": "data.url",
+    "note": "上游地址为 https://img.scdn.io/api/v1.php；可通过 .env 中的 SCDN_OUTPUT_FORMAT、SCDN_PASSWORD_ENABLED、SCDN_IMAGE_PASSWORD、SCDN_CDN_DOMAIN 调整上传行为。",
+    "uploadMode": "real",
+    "resultBaseUrl": "",
+    "accepts": ["image/*"]
   }
 ]

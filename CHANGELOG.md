@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.2.0
+
+新增 SCDN 图床接入。
+
+### Added
+
+- 新增 `SCDN` Node 代理上传模块
+- 新增 `POST /api/scdn-upload` 上传接口
+- 新增 SCDN 运行时设置项：
+  - `SCDN_OUTPUT_FORMAT`
+  - `SCDN_PASSWORD_ENABLED`
+  - `SCDN_IMAGE_PASSWORD`
+  - `SCDN_CDN_DOMAIN`
+  - `SCDN_MAX_FILE_SIZE_BYTES`
+- 新增 `/api/settings` 中的 `scdn` 配置输出
+- 新增 Worker 示例中的 SCDN 基础上传支持
+
+### Improved
+
+- 前端服务列表新增 `SCDN`
+- `.env.example` 补充 SCDN 中文注释
+- README 补充 SCDN 配置说明
+- 版本提升至 `v1.2.0`
+
 ## v1.1.0
 
 首个公开发布版本。

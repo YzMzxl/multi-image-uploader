@@ -3,12 +3,14 @@ const SERVICE_DEFINITIONS = [
   { id: "ipfs", endpoint: "/api/ipfs-upload", fileField: "image" },
   { id: "imgbb", endpoint: "/api/imgbb-upload", fileField: "image" },
   { id: "58img", endpoint: "/api/58img-upload", fileField: "image" },
+  { id: "scdn", endpoint: "/api/scdn-upload", fileField: "image" },
 ];
 
 const CELINE_UPLOAD_URL = "https://ocs.celine.cn/livechat/chat/file/upload/celine/web/0/0";
 const IPFS_UPLOAD_URL = "https://api.img2ipfs.org/api/v0/add?pin=false";
 const IPFS_GATEWAY_BASE_URL = "https://ipfs.io/ipfs";
 const IMGBB_UPLOAD_URL = "https://zh-cn.imgbb.com/json";
+const SCDN_UPLOAD_URL = "https://img.scdn.io/api/v1.php";
 const IMG58_GET_UPLOAD_URL = "https://im.58.com/msg/get_pic_upload_url";
 const IMG58_GET_UPLOAD_URL_QUERY = new URLSearchParams({
   params: "LjAuMC4wJmFwcGlkPTEwMTQwLW1jcyU0MGppdG1vdVFyY0hzJmV4dGVuZF9mbGFnPTAmdW5yZWFkX2luZGV4PTEmc2RrX3ZlcnNpb249NjQzMiZkZXZpY2VfaWQ9NThBbm9ueW1vdXMxM2E1MTI2YS1hYWIxLTQxMjQtOTM2Mi05YjlhM2Q1Njg3ZjEmeHh6bF9zbWFydGlkPSZpZDU4PUNoQlBsMmVqUlhSbTdhTlFNTWRrQWclM0QlM0Q1dXNlcl9pZD01OEFub255bW91czEzYTUxMjZhLWFhYjEtNDEyNC05MzYyLTliOWEzZDU2ODdmMSZzb3VyY2U9MTQmaW1fdG9rZW49NThBbm9ueW1vdXMxM2E1MTI2YS1hYWIxLTQxMjQtOTM2Mi05YjlhM2Q1Njg3ZjEmY2xpZW50X3ZlcnNpb249MS4wJmNsaWVudF90eXBlPXBjd2ViJm9zX3R5cGU9Q2hyb21lJm9zX3ZlcnNpb249MTMy",
@@ -127,6 +129,8 @@ async function uploadByServiceId(serviceId, file) {
       return uploadImgbb(file);
     case "58img":
       return upload58img(file);
+    case "scdn":
+      return uploadScdn(file);
     default:
       throw createUpstreamError("Service handler not found", serviceId, 500);
   }
@@ -222,6 +226,35 @@ async function upload58img(file) {
       path: extract58imgPath(uploadUrl),
       retention: "temporary",
       note: "58img may periodically delete uploaded files.",
+    },
+  };
+}
+
+async function uploadScdn(file) {
+  const upstream = await postMultipart({
+    url: SCDN_UPLOAD_URL,
+    fileField: "image",
+    file,
+    fields: {
+      outputFormat: "auto",
+    },
+  });
+
+  if (!upstream?.success || !upstream?.url) {
+    throw createUpstreamError("SCDN upstream upload failed", upstream);
+  }
+
+  return {
+    success: true,
+    data: {
+      url: upstream.url,
+    },
+    meta: {
+      filename: extractFileNameFromUrl(upstream.url),
+      originalSize: upstream?.data?.original_size ?? file.size ?? "",
+      compressedSize: upstream?.data?.compressed_size ?? "",
+      compressionRatio: upstream?.data?.compression_ratio ?? "",
+      upstream: SCDN_UPLOAD_URL,
     },
   };
 }
@@ -329,6 +362,15 @@ function extract58imgPath(uploadUrl) {
   }
 
   return filePath;
+}
+
+function extractFileNameFromUrl(url) {
+  try {
+    const cleanUrl = String(url).split("?")[0];
+    return decodeURIComponent(cleanUrl.slice(cleanUrl.lastIndexOf("/") + 1));
+  } catch {
+    return "";
+  }
 }
 
 async function safeReadText(response) {

@@ -8,6 +8,7 @@ const celine = require("./api/API_IMG_CELINE");
 const ipfs = require("./api/API_IMG_IPFS");
 const imgbb = require("./api/API_IMG_IMGBB");
 const img58 = require("./api/API_IMG_58IMG");
+const scdn = require("./api/API_IMG_SCDN");
 const lsky = require("./api/API_IMG_LSKY");
 
 const SERVICE_HANDLERS = {
@@ -15,6 +16,7 @@ const SERVICE_HANDLERS = {
   ipfs,
   imgbb,
   "58img": img58,
+  scdn,
   lsky,
 };
 
