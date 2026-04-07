@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const BASE_SERVICE_DEFINITIONS = require("./services.json");
+const BASE_SERVICE_DEFINITIONS = require("./public/services.json");
 
 const DEFAULT_ENV_FILES = [".env.local", ".env"];
 const LSKY_DEFAULT_FIELDS = [

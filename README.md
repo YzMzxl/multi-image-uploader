@@ -6,7 +6,18 @@
 - https://github.com/YzMzxl/multi-image-uploader
 
 当前版本：
-- `v1.3.6`
+- `v1.4.0`
+
+## 一键部署
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/YzMzxl/multi-image-uploader)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YzMzxl/multi-image-uploader)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/YzMzxl/multi-image-uploader)
+
+说明：
+- Cloudflare 按钮默认走 Workers + Static Assets 部署
+- 同一仓库也支持直接导入到 Cloudflare Pages
+- Vercel 与 Netlify 会使用仓库内已提供的 API 入口和静态资源目录
 
 ## 项目简介
 
@@ -35,29 +46,51 @@
 - 支持通过 `.env` 配置一个或多个 Lsky Pro+ 服务
 - SCDN 通过前端设置面板控制输出格式、密码保护与输出域名
 - SCDN 设置保存在当前浏览器，无需修改 `.env`
+- 可直接部署到 Cloudflare Pages / Workers、Vercel、Netlify
 
 ## 项目结构
 
 ```text
 .
 |-- .env.example
-|-- app.js
-|-- index.html
-|-- styles.css
-|-- services.json
+|-- .gitignore
+|-- _worker.js
+|-- api
+|   `-- [...path].js
+|-- public
+|   |-- app.js
+|   |-- index.html
+|   |-- services.json
+|   `-- styles.css
+|-- providers
+|   |-- API_IMG_58IMG.js
+|   |-- API_IMG_CELINE.js
+|   |-- API_IMG_IMGBB.js
+|   |-- API_IMG_IPFS.js
+|   |-- API_IMG_LSKY.js
+|   `-- API_IMG_SCDN.js
+|-- netlify
+|   `-- functions
+|       `-- api.js
+|-- CHANGELOG.md
+|-- index.js
+|-- netlify.toml
+|-- package.json
 |-- runtime-config.js
 |-- server.js
-|-- index.js
+|-- vercel.json
 |-- worker.js
-|-- CHANGELOG.md
-`-- api
-    |-- API_IMG_58IMG.js
-    |-- API_IMG_CELINE.js
-    |-- API_IMG_IMGBB.js
-    |-- API_IMG_IPFS.js
-    |-- API_IMG_LSKY.js
-    `-- API_IMG_SCDN.js
+`-- wrangler.jsonc
 ```
+
+说明：
+- `public/`：静态前端资源目录，供 Vercel / Netlify / Cloudflare 静态资源托管使用
+- `_worker.js`：Cloudflare Pages / Workers 入口
+- `api/[...path].js`：Vercel Serverless API 入口
+- `netlify/functions/api.js`：Netlify Functions API 入口
+- `providers/`：图床适配模块
+- `index.js`：统一 API 路由核心，三平台入口都会复用
+- `server.js`：本地 Node 开发服务器
 
 ## 本地运行
 
@@ -87,6 +120,53 @@ npm run dev
 ```text
 http://127.0.0.1:8000
 ```
+
+## 部署说明
+
+### Cloudflare Pages
+
+支持直接导入 GitHub 仓库部署。
+
+推荐配置：
+- Framework preset: `None`
+- Build command: 留空
+- Build output directory: `.`
+
+说明：
+- Pages 会使用根目录 `_worker.js`
+- 静态资源实际位于 `public/`
+- `_worker.js` 会将非 API 请求转发到 `public/` 中的静态文件
+
+### Cloudflare Workers
+
+仓库内已提供 `wrangler.jsonc`，可直接使用：
+
+```bash
+npm install
+npx wrangler deploy
+```
+
+说明：
+- 使用 `_worker.js` 作为 Worker 入口
+- 使用 `public/` 作为静态资源目录
+
+### Vercel
+
+仓库内已提供：
+- `public/` 静态资源目录
+- `api/[...path].js` Serverless 入口
+- `vercel.json`
+
+直接导入仓库即可部署。
+
+### Netlify
+
+仓库内已提供：
+- `public/` 静态资源目录
+- `netlify/functions/api.js` 函数入口
+- `netlify.toml`
+
+直接导入仓库即可部署。
 
 ## 环境变量
 

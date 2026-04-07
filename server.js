@@ -6,7 +6,7 @@ const { handleNodeApiRequest } = require("./index");
 
 const app = express();
 const { port: PORT } = getServerConfig();
-const ROOT_DIR = __dirname;
+const PUBLIC_DIR = require("path").join(__dirname, "public");
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -14,7 +14,7 @@ const upload = multer({
   },
 });
 
-app.use(express.static(ROOT_DIR, { index: "index.html" }));
+app.use(express.static(PUBLIC_DIR, { index: "index.html" }));
 
 app.options("/api/*", async (req, res) => {
   const descriptor = await handleNodeApiRequest(req);

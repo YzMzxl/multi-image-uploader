@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.4.0
+
+将开源目录重构为可直接部署到 Cloudflare、Vercel、Netlify 的结构。
+
+### Added
+
+- 新增 `public/` 静态资源目录
+- 新增 Cloudflare Pages / Workers 入口 `_worker.js`
+- 新增 `wrangler.jsonc`
+- 新增 Vercel Serverless 入口 `api/[...path].js`
+- 新增 Netlify Functions 入口 `netlify/functions/api.js`
+- 新增 `vercel.json`
+- 新增 `netlify.toml`
+- 新增 README 一键部署按钮
+
+### Changed
+
+- 图床适配模块从顶层 `api/` 迁移到 `providers/`
+- 本地 Node 服务器改为从 `public/` 提供静态资源
+- 项目目录结构更适合多平台部署
+- README 补充部署说明与平台兼容说明
+
 ## v1.3.4
 
 将 SCDN 上传策略改为完整轮询模式。

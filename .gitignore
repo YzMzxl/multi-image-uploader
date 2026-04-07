@@ -4,3 +4,6 @@ npm-debug.log*
 .env
 .env.local
 RELEASE*.md
+.vercel/
+.netlify/
+.wrangler/
