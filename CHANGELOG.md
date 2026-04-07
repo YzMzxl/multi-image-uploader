@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.3.3
+
+重构 SCDN 的 CDN 域名上传兼容策略。
+
+### Changed
+
+- SCDN 上传不再只依赖“默认上传成功”这一条路径
+- 现在会优先尝试默认上传
+- 默认上传失败时，自动回退到 `esaimg.cdn1.vip` 作为上传通道
+- 上传成功后，再把返回链接改写成当前选中的 CDN 域名
+
+### Result
+
+- `cloudflareimg.cdn.sn` 可通过回退策略获得可用链接
+- `edgeoneimg.cdn.sn` 可通过回退策略获得可用链接
+- `esaimg.cdn1.vip` 继续保持可用
+- 默认模式在上游不稳定时也能自动回退
+
 ## v1.3.2
 
 修复另外两个 SCDN CDN 域名上传失败的问题。

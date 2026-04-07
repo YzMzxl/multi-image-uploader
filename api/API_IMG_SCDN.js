@@ -8,6 +8,61 @@ async function upload({ file, fields }) {
     );
   }
 
+  const { data, uploadCdnDomain } = await uploadWithFallback(file, config);
+  const remoteUrl = applyScdnCdnDomain(data.url, config.cdnDomain || uploadCdnDomain);
+
+  return {
+    success: true,
+    message: data.message || "",
+    data: {
+      url: remoteUrl,
+    },
+    meta: {
+      filename: data?.data?.filename || extractFileName(remoteUrl),
+      originalSize: data?.data?.original_size ?? file.size ?? "",
+      compressedSize: data?.data?.compressed_size ?? "",
+      compressionRatio: data?.data?.compression_ratio ?? "",
+      outputFormat: config.outputFormat,
+      passwordEnabled: config.passwordEnabled,
+      cdnDomain: config.cdnDomain || uploadCdnDomain,
+      upstream: config.uploadUrl,
+    },
+  };
+}
+
+async function uploadWithFallback(file, config) {
+  const candidates = buildUploadCandidates(config.cdnDomain);
+  let lastError = null;
+
+  for (const uploadCdnDomain of candidates) {
+    try {
+      const data = await performScdnUpload(file, config, uploadCdnDomain);
+      return {
+        data,
+        uploadCdnDomain,
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || createUpstreamError("SCDN upload failed", "", 502);
+}
+
+function buildUploadCandidates(targetCdnDomain) {
+  const candidates = [];
+
+  if (targetCdnDomain === "esaimg.cdn1.vip") {
+    candidates.push("esaimg.cdn1.vip");
+  } else {
+    candidates.push("");
+    candidates.push("esaimg.cdn1.vip");
+  }
+
+  return [...new Set(candidates)];
+}
+
+async function performScdnUpload(file, config, uploadCdnDomain) {
   const formData = new FormData();
   formData.append("image", file, file.name || "upload.bin");
   formData.append("outputFormat", config.outputFormat);
@@ -15,6 +70,10 @@ async function upload({ file, fields }) {
   if (config.passwordEnabled) {
     formData.append("password_enabled", "true");
     formData.append("image_password", config.imagePassword);
+  }
+
+  if (uploadCdnDomain) {
+    formData.append("cdn_domain", uploadCdnDomain);
   }
 
   const response = await fetch(config.uploadUrl, {
@@ -45,25 +104,7 @@ async function upload({ file, fields }) {
     );
   }
 
-  const remoteUrl = applyScdnCdnDomain(data.url, config.cdnDomain);
-
-  return {
-    success: true,
-    message: data.message || "",
-    data: {
-      url: remoteUrl,
-    },
-    meta: {
-      filename: data?.data?.filename || extractFileName(remoteUrl),
-      originalSize: data?.data?.original_size ?? file.size ?? "",
-      compressedSize: data?.data?.compressed_size ?? "",
-      compressionRatio: data?.data?.compression_ratio ?? "",
-      outputFormat: config.outputFormat,
-      passwordEnabled: config.passwordEnabled,
-      cdnDomain: config.cdnDomain,
-      upstream: config.uploadUrl,
-    },
-  };
+  return data;
 }
 
 function applyScdnCdnDomain(url, cdnDomain) {

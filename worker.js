@@ -253,21 +253,13 @@ async function uploadScdn(file, fields = {}) {
     throw createUpstreamError("SCDN password protection requires image_password when password_enabled is true.", "", 400);
   }
 
-  const upstream = await postMultipart({
-    url: SCDN_UPLOAD_URL,
-    fileField: "image",
-    file,
-    fields: {
-      outputFormat,
-      ...(passwordEnabled ? { password_enabled: "true", image_password: imagePassword } : {}),
-    },
+  const { upstream, uploadCdnDomain } = await uploadScdnWithFallback(file, {
+    outputFormat,
+    passwordEnabled,
+    imagePassword,
+    cdnDomain,
   });
-
-  if (!upstream?.success || !upstream?.url) {
-    throw createUpstreamError("SCDN upstream upload failed", upstream);
-  }
-
-  const remoteUrl = applyScdnCdnDomain(upstream.url, cdnDomain);
+  const remoteUrl = applyScdnCdnDomain(upstream.url, cdnDomain || uploadCdnDomain);
 
   return {
     success: true,
@@ -281,10 +273,56 @@ async function uploadScdn(file, fields = {}) {
       compressionRatio: upstream?.data?.compression_ratio ?? "",
       outputFormat,
       passwordEnabled,
-      cdnDomain,
+      cdnDomain: cdnDomain || uploadCdnDomain,
       upstream: SCDN_UPLOAD_URL,
     },
   };
+}
+
+async function uploadScdnWithFallback(file, options) {
+  const candidates = buildScdnUploadCandidates(options.cdnDomain);
+  let lastError = null;
+
+  for (const uploadCdnDomain of candidates) {
+    try {
+      const upstream = await performScdnUpload(file, options, uploadCdnDomain);
+      return {
+        upstream,
+        uploadCdnDomain,
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || createUpstreamError("SCDN upstream upload failed", "", 502);
+}
+
+function buildScdnUploadCandidates(targetCdnDomain) {
+  if (targetCdnDomain === "esaimg.cdn1.vip") {
+    return ["esaimg.cdn1.vip"];
+  }
+
+  return ["", "esaimg.cdn1.vip"];
+}
+
+async function performScdnUpload(file, options, uploadCdnDomain) {
+  const upstream = await postMultipart({
+    url: SCDN_UPLOAD_URL,
+    fileField: "image",
+    file,
+    fields: {
+      outputFormat: options.outputFormat,
+      ...(options.passwordEnabled ? { password_enabled: "true", image_password: options.imagePassword } : {}),
+      ...(uploadCdnDomain ? { cdn_domain: uploadCdnDomain } : {}),
+    },
+  });
+
+  if (!upstream?.success || !upstream?.url) {
+    throw createUpstreamError("SCDN upstream upload failed", upstream);
+  }
+
+  return upstream;
 }
 
 async function get58imgUploadUrl() {

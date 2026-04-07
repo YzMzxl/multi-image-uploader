@@ -16,7 +16,7 @@ const SCDN_OUTPUT_FORMAT_OPTIONS = [
   { value: "webp_animated", label: "动图 WebP" },
 ];
 const SCDN_CDN_DOMAIN_OPTIONS = [
-  { value: "", label: "默认域名（img.scdn.io）" },
+  { value: "", label: "默认返回域名" },
   { value: "cloudflareimg.cdn.sn", label: "cloudflareimg.cdn.sn" },
   { value: "edgeoneimg.cdn.sn", label: "edgeoneimg.cdn.sn" },
   { value: "esaimg.cdn1.vip", label: "esaimg.cdn1.vip" },
