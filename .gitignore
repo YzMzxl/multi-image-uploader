@@ -3,3 +3,4 @@ __pycache__/
 npm-debug.log*
 .env
 .env.local
+RELEASE*.md
