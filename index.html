@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>多图床上传小工具</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="dock panel">
+        <div class="dock-label">
+          <span class="dock-kicker">服务切换</span>
+          <strong>接口切换</strong>
+        </div>
+        <div id="dockScroll" class="dock-scroll" aria-label="接口切换滚动容器">
+          <div id="serviceTabs" class="service-dock" role="tablist" aria-label="图床接口切换"></div>
+        </div>
+        <a
+          id="repoLink"
+          class="repo-link"
+          href="https://github.com"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="查看开源仓库"
+          title="查看开源仓库"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.589 2 12.248c0 4.527 2.865 8.368 6.839 9.724.5.095.682-.222.682-.494 0-.244-.009-.89-.014-1.747-2.782.618-3.369-1.373-3.369-1.373-.455-1.177-1.11-1.49-1.11-1.49-.908-.636.069-.623.069-.623 1.004.073 1.532 1.054 1.532 1.054.893 1.565 2.341 1.113 2.91.851.091-.665.35-1.114.636-1.37-2.221-.258-4.555-1.137-4.555-5.062 0-1.118.389-2.032 1.029-2.749-.103-.26-.446-1.303.098-2.716 0 0 .84-.276 2.75 1.05A9.36 9.36 0 0 1 12 6.844c.85.004 1.705.118 2.504.346 1.909-1.326 2.748-1.05 2.748-1.05.546 1.413.203 2.456.1 2.716.64.717 1.028 1.631 1.028 2.749 0 3.936-2.337 4.8-4.565 5.053.359.318.679.946.679 1.907 0 1.377-.012 2.488-.012 2.826 0 .275.18.594.688.493C19.138 20.613 22 16.773 22 12.248 22 6.589 17.523 2 12 2Z"></path>
+          </svg>
+        </a>
+      </header>
+
+      <main class="workspace">
+        <section class="workspace-main">
+          <section class="toolbar panel" aria-label="功能开关">
+            <div class="section-title">
+              <span class="section-kicker">功能开关</span>
+              <h1>功能开关</h1>
+            </div>
+
+            <div id="switchRail" class="switch-grid">
+              <article class="switch-card">
+                <div class="switch-head">
+                  <label class="toggle">
+                    <input id="autoCopyToggle" type="checkbox" />
+                    <span class="toggle-ui" aria-hidden="true"></span>
+                    <span class="toggle-text">上传后自动复制</span>
+                  </label>
+                  <p>上传成功后自动复制当前选中的输出格式。</p>
+                </div>
+                <div
+                  id="autoCopyFormatSwitch"
+                  class="segmented"
+                  role="tablist"
+                  aria-label="自动复制格式选择"
+                ></div>
+              </article>
+
+              <article class="switch-card">
+                <div class="switch-head">
+                  <label class="toggle">
+                    <input id="webpToggle" type="checkbox" />
+                    <span class="toggle-ui" aria-hidden="true"></span>
+                    <span class="toggle-text">上传前转 WebP</span>
+                  </label>
+                  <p>仅图片参与转换处理，视频文件会自动跳过。</p>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="upload-stage panel" aria-label="投放区">
+            <div class="section-title">
+              <span class="section-kicker">文件投放</span>
+              <h2>投放区</h2>
+            </div>
+
+            <div
+              id="dropzone"
+              class="dropzone"
+              tabindex="0"
+              role="button"
+              aria-label="点击上传、拖拽上传或粘贴截图"
+            >
+              <div class="dropzone-mark" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <h3>点击选择文件 / 拖拽文件 / 粘贴截图</h3>
+              <p>支持图片与视频文件，上传请求会按当前所选接口执行。</p>
+            </div>
+
+            <div class="upload-foot">
+              <div class="stage-chips">
+                <span class="stage-chip">当前接口：<strong id="activeServiceName">-</strong></span>
+                <span class="stage-chip">支持：<strong id="activeServiceSupport">-</strong></span>
+                <span class="stage-chip">快捷键：Ctrl + V</span>
+              </div>
+              <button id="pickBtn" class="solid-btn" type="button">选择文件</button>
+            </div>
+
+            <input id="fileInput" type="file" accept="image/*,video/*" multiple hidden />
+          </section>
+
+          <section class="service-panel panel" aria-label="接口介绍">
+            <div class="section-title">
+              <span class="section-kicker">接口信息</span>
+              <h2>接口介绍</h2>
+            </div>
+            <div id="serviceCard" class="service-card"></div>
+          </section>
+        </section>
+
+        <aside class="queue-panel panel" aria-label="上传队列">
+          <div class="queue-head">
+            <div class="section-title">
+              <span class="section-kicker">上传任务</span>
+              <h2>上传队列</h2>
+            </div>
+            <div class="queue-tools">
+              <p id="queueSummary">暂无文件</p>
+              <button id="clearBtn" class="mini-btn" type="button">清空队列</button>
+            </div>
+          </div>
+
+          <div id="queueList" class="queue-list"></div>
+
+          <div id="emptyState" class="empty-state">
+            <div class="empty-figure" aria-hidden="true"></div>
+            <h3>还没有进入队列的文件</h3>
+            <p>上传结果会直接出现在这里，不需要滚到页面下方再找。</p>
+          </div>
+        </aside>
+      </main>
+    </div>
+  </body>
+</html>

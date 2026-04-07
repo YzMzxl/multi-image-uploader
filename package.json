@@ -1,0 +1,25 @@
+{
+  "name": "multi-image-uploader",
+  "version": "1.0.0",
+  "description": "多图床上传小工具",
+  "homepage": "https://github.com/YzMzxl/multi-image-uploader",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YzMzxl/multi-image-uploader.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YzMzxl/multi-image-uploader/issues"
+  },
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^2.0.0"
+  }
+}
